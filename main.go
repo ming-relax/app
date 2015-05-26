@@ -36,6 +36,7 @@ func init() {
 
 type ManifestEntry struct {
 	Command string   `yaml:"command"`
+	Links   []string `yaml:"links"`
 	Ports   []string `yaml:"ports"`
 }
 
@@ -211,6 +212,15 @@ func templateHelpers() template.FuncMap {
 				}
 
 				ls = append(ls, fmt.Sprintf(`{ "Protocol": "TCP", "LoadBalancerPort": { "Ref": "%sPort%sBalancer" }, "InstanceProtocol": "TCP", "InstancePort": { "Ref": "%sPort%sHost" } }`, upperName(ps), parts[0], upperName(ps), parts[0]))
+			}
+
+			return template.HTML(strings.Join(ls, ","))
+		},
+		"links": func(e ManifestEntry) template.HTML {
+			ls := []string{}
+
+			for _, link := range e.Links {
+				ls = append(ls, fmt.Sprintf(`"%s"`, link))
 			}
 
 			return template.HTML(strings.Join(ls, ","))

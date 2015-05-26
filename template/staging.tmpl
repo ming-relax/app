@@ -95,10 +95,12 @@
       "Properties": {
         "ServiceToken": { "Ref": "Kernel" },
         "Name": { "Fn::Join": [ "-", [ { "Ref": "AWS::StackName" }, "{{ $ps }}" ] ] },
+        "App": { "Ref": "AWS::StackName" },
         "Image": { "Ref": "{{ upper $ps }}Image" },
         "Command": { "Ref": "{{ upper $ps }}Command" },
         "Environment": { "Ref": "Environment" },
         "Key": { "Ref": "Key" },
+        "Links": [ {{ links $entry }} ],
         "CPU": "200",
         "Memory": "300",
         "PortMappings": [ {{ portmappings $ps $entry }} ]
