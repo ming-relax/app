@@ -62,6 +62,12 @@
       "Description": "CPU shares of each process",
       "Type": "Number"
     },
+    "CustomTopic": {
+      "AllowedPattern": "arn:aws:.*",
+      "ConstraintDescription": "must be an ARN",
+      "Description": "Bootstrap ARN (Lambda or SNS)",
+      "Type": "String"
+    },
     "DesiredCount": {
       "Default": "1",
       "Description": "The number of instantiations of the specified ECS task definition to place and keep running on your cluster.",
@@ -238,83 +244,6 @@
       },
       "Type": "AWS::EC2::SecurityGroup"
     },
-    "CustomTopic": {
-      "Properties": {
-        "Code": {
-          "S3Bucket": {
-            "Fn::Join": [
-              "-",
-              [
-                "convox",
-                {
-                  "Ref": "AWS::Region"
-                }
-              ]
-            ]
-          },
-          "S3Key": {
-            "Fn::Join": [
-              "",
-              [
-                "release/",
-                {
-                  "Ref": "Version"
-                },
-                "/formation.zip"
-              ]
-            ]
-          }
-        },
-        "Handler": "lambda.external",
-        "MemorySize": "128",
-        "Role": {
-          "Fn::GetAtt": [
-            "CustomTopicRole",
-            "Arn"
-          ]
-        },
-        "Runtime": "nodejs",
-        "Timeout": "30"
-      },
-      "Type": "AWS::Lambda::Function"
-    },
-    "CustomTopicRole": {
-      "Properties": {
-        "AssumeRolePolicyDocument": {
-          "Statement": [
-            {
-              "Action": [
-                "sts:AssumeRole"
-              ],
-              "Effect": "Allow",
-              "Principal": {
-                "Service": [
-                  "lambda.amazonaws.com"
-                ]
-              }
-            }
-          ],
-          "Version": "2012-10-17"
-        },
-        "Path": "/",
-        "Policies": [
-          {
-            "PolicyDocument": {
-              "Statement": [
-                {
-                  "Action": "*",
-                  "Effect": "Allow",
-                  "Resource": "*"
-                }
-              ],
-              "Version": "2012-10-17"
-            },
-            "PolicyName": "Administrator"
-          }
-        ]
-      },
-      "Type": "AWS::IAM::Role"
-    },
     "Kinesis": {
       "Properties": {
         "ShardCount": 1
@@ -368,7 +297,6 @@
       "Type": "AWS::IAM::User"
     },
     "Service": {
-      "DependsOn": "CustomTopic",
       "Properties": {
         "Cluster": {
           "Ref": "Cluster"
@@ -393,14 +321,14 @@
         "Name": {
           "Ref": "AWS::StackName"
         },
+        "Region": {
+          "Ref": "AWS::Region"
+        },
         "Role": {
           "Ref": "ServiceRole"
         },
         "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomTopic",
-            "Arn"
-          ]
+          "Ref": "CustomTopic"
         },
         "TaskDefinition": {
           "Ref": "TaskDefinition"
@@ -472,8 +400,21 @@
       },
       "Type": "AWS::S3::Bucket"
     },
+    "SettingsCleanup": {
+      "Properties": {
+        "Bucket": {
+          "Ref": "Settings"
+        },
+        "Region": {
+          "Ref": "AWS::Region"
+        },
+        "ServiceToken": {
+          "Ref": "CustomTopic"
+        }
+      },
+      "Type": "Custom::S3BucketCleanup"
+    },
     "TaskDefinition": {
-      "DependsOn": "CustomTopic",
       "Properties": {
         "Environment": {
           "Ref": "Environment"
@@ -484,14 +425,14 @@
         "Name": {
           "Ref": "AWS::StackName"
         },
+        "Region": {
+          "Ref": "AWS::Region"
+        },
         "Release": {
           "Ref": "Release"
         },
         "ServiceToken": {
-          "Fn::GetAtt": [
-            "CustomTopic",
-            "Arn"
-          ]
+          "Ref": "CustomTopic"
         },
         "Tasks": [
           {
